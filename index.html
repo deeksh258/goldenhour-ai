@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GoldenHour AI</title>
+<style>
+:root{--bg:#f1f5f7;--ink:#14212b;--mut:#51606c;--line:#cfd9df;--card:#fff;--red:#b3261e;--redbg:#fdeceb;--teal:#0f5f73}
+*{box-sizing:border-box}
+body{margin:0;font:17px/1.5 system-ui,"Noto Sans Tamil","Noto Sans Devanagari",sans-serif;background:var(--bg);color:var(--ink)}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:2px solid var(--line);padding:10px 14px;display:flex;gap:10px;align-items:center}
+h1{font-size:19px;margin:0;flex:1}h2{font-size:18px;margin:0 0 10px}
+select{font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+a.call{background:var(--red);color:#fff;font-weight:700;text-decoration:none;padding:12px 16px;border-radius:10px;white-space:nowrap}
+main{max-width:640px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.emg{background:var(--redbg);border:2px solid var(--red)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button,.btn{font:inherit;min-height:52px;padding:10px 14px;border-radius:10px;border:2px solid var(--teal);background:#fff;color:var(--teal);font-weight:600;cursor:pointer;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+button.pri,.btn.pri{background:var(--teal);color:#fff}
+button.red,.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #f0a500;outline-offset:2px}
+textarea,input{font:inherit;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin:4px 0 8px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
+.h{border-top:1px solid var(--line);padding:10px 0;display:flex;gap:10px;justify-content:space-between;align-items:center}
+.m{color:var(--mut);font-size:15px}pre{white-space:pre-wrap;background:#f6f8f9;padding:10px;border-radius:8px;font:15px/1.5 inherit;margin:0 0 10px}
+footer{max-width:640px;margin:0 auto;padding:0 14px 30px;color:var(--mut);font-size:14px}
+#tm{font-size:28px;font-weight:700}
+@media print{header,footer,.np{display:none!important}}
+</style></head><body>
+<header><h1>GoldenHour AI</h1>
+<select id="lg" aria-label="Language"><option value="en">English</option><option value="ta">தமிழ்</option><option value="hi">हिन्दी</option></select>
+<a class="call" id="c1" href="tel:108"></a></header>
+<main id="app"></main>
+<footer>Student hackathon prototype. Not a medical device. It does not diagnose and cannot rule out an emergency. If you think it is an emergency, call 108 or 112 now.</footer>
+<script>
+// ===== SETTINGS =====
+const API_URL = ""; // optional: your backend URL that calls an LLM and returns symptom JSON. Never put an API key here.
+// SAMPLE hospitals. Replace with verified hospitals and numbers from their official websites.
+const HOSP=[
+ {n:"SAMPLE Hospital A (replace)",t:["stroke","general"],lat:13.08,lng:80.27,p:""},
+ {n:"SAMPLE Hospital B (replace)",t:["cardiac","general"],lat:13.04,lng:80.23,p:""},
+ {n:"SAMPLE Hospital C (replace)",t:["general"],lat:13.12,lng:80.29,p:""}];
+// ===== TEXT (have a native speaker review Tamil and Hindi) =====
+const T={
+en:{call:"Call 108",tap:"What is happening? Tap one:",desc:"Or describe it in your own words",go:"Check",
+ emg:"Call 108 or 112 now",y:"Yes",n:"No",u:"Not sure",ask:"Is this happening?",
+ doc:"I can’t rule out an emergency. Please see a doctor soon, and call 108 right away if things get worse.",
+ steps:["Note the time the symptoms started","Give no food, water or medicines","Keep them seated or lying safely","Unlock the door and keep the medicine list ready"],
+ L:{face_drooping:"Face drooping",arm_or_leg_weakness:"Arm or leg weakness",speech_trouble:"Speech trouble",sudden_vision_loss:"Sudden vision loss",sudden_severe_headache:"Sudden severe headache",sudden_confusion_or_dizziness:"Sudden confusion or dizziness",chest_pain:"Chest pain",breathing_trouble:"Breathing trouble",seizure:"Seizure",unconsciousness:"Unconscious"}},
+ta:{call:"108-க்கு அழைக்கவும்",tap:"என்ன நடக்கிறது? ஒன்றைத் தொடவும்:",desc:"அல்லது உங்கள் மொழியில் விவரிக்கவும்",go:"சரிபார்",
+ emg:"இப்போதே 108 அல்லது 112-க்கு அழைக்கவும்",y:"ஆம்",n:"இல்லை",u:"தெரியவில்லை",ask:"இது நடக்கிறதா?",
+ doc:"அவசர நிலை இல்லை என்று என்னால் உறுதி செய்ய முடியாது. தயவுசெய்து மருத்துவரைப் பார்க்கவும். நிலை மோசமானால் உடனே 108-க்கு அழைக்கவும்.",
+ steps:["அறிகுறி தொடங்கிய நேரத்தைக் குறித்துக் கொள்ளுங்கள்","உணவு, தண்ணீர், மருந்து எதுவும் கொடுக்காதீர்கள்","அவரை பாதுகாப்பாக அமர வைக்கவும் அல்லது படுக்க வைக்கவும்","கதவைத் திறந்து வைத்து, மருந்துப் பட்டியலை தயாராக வைக்கவும்"],
+ L:{face_drooping:"முகம் கோணலாக உள்ளது",arm_or_leg_weakness:"கை/கால் பலவீனம்",speech_trouble:"பேச்சு குழறுகிறது",chest_pain:"நெஞ்சு வலி",breathing_trouble:"மூச்சுத் திணறல்",unconsciousness:"மயக்கம்"}},
+hi:{call:"108 पर कॉल करें",tap:"क्या हो रहा है? एक चुनें:",desc:"या अपनी भाषा में बताएं",go:"जांचें",
+ emg:"अभी 108 या 112 पर कॉल करें",y:"हाँ",n:"नहीं",u:"पता नहीं",ask:"क्या यह हो रहा है?",
+ doc:"मैं आपात स्थिति से इनकार नहीं कर सकता। कृपया डॉक्टर से मिलें। हालत बिगड़े तो तुरंत 108 पर कॉल करें।",
+ steps:["लक्षण शुरू होने का समय नोट करें","खाना, पानी या दवा न दें","उन्हें सुरक्षित बैठाएं या लिटाएं","दरवाजा खुला रखें और दवाओं की सूची तैयार रखें"],
+ L:{face_drooping:"चेहरा टेढ़ा",arm_or_leg_weakness:"हाथ/पैर कमजोर",speech_trouble:"बोलने में दिक्कत",chest_pain:"सीने में दर्द",breathing_trouble:"सांस लेने में तकलीफ",unconsciousness:"बेहोश"}}};
+const VOICE={en:"en-IN",ta:"ta-IN",hi:"hi-IN"};
+let lang="en",callTap=0,amb={},Q=[],sym={},view=()=>{},pos=null,onset=null,qi=0,timer=null;
+const $=id=>document.getElementById(id);
+const t=k=>T[lang][k]??T.en[k];
+const lab=k=>(T[lang].L||{})[k]||T.en.L[k];
+// ===== SAFETY RULES (plain code, the AI never decides) =====
+const KEYS=Object.keys(T.en.L);
+const STROKE=KEYS.slice(0,6),QT=["face_drooping","arm_or_leg_weakness","speech_trouble","chest_pain","breathing_trouble","unconsciousness"],ASK=QT.slice(0,5);
+const RX={
+face_drooping:/face|droop|mouth|முகம்|வாய்|சாய்|கோணல்|चेहरा|मुंह|टेढ़/i,
+arm_or_leg_weakness:/\b(arm|leg|hand)\b|weak|numb|கை|கால்|பலவீன|உணர்வ|हाथ|पैर|कमजोर|सुन्न/i,
+speech_trouble:/speech|slur|speak|talk|பேச்சு|உளறு|குழறு|பேச|बोल|जुबान|लड़खड़/i,
+sudden_vision_loss:/vision|can.t see|blind|பார்வை|दिखाई|नजर/i,
+sudden_severe_headache:/headache|தலைவலி|सिरदर्द/i,
+sudden_confusion_or_dizziness:/confus|dizz|giddy|குழப்ப|தலைசுற்ற|चक्कर|भ्रम/i,
+chest_pain:/chest|heart|நெஞ்சு|மார்பு|सीने|छाती/i,
+breathing_trouble:/breath|மூச்சு|सांस|साँस/i,
+seizure:/seizure|\bfits?\b|convuls|வலிப்பு|दौरा|मिर्गी/i,
+unconsciousness:/unconscious|faint|collapse|not respond|மயக்க|बेहोश/i};
+function clean(s){const r={};KEYS.forEach(k=>{const v=String(s[k]??"unknown").trim().toLowerCase();r[k]=v=="yes"||v=="no"?v:"unknown"});return r}
+function decide(s){s=clean(s);const hits=KEYS.filter(k=>s[k]=="yes");
+ if(hits.length)return{level:"EMERGENCY",hits};
+ return{level:KEYS.some(k=>s[k]=="unknown")?"NOT_CLEAR":"NO_SIGNS_REPORTED",hits:[]}} // no "safe" level on purpose
+async function extract(text){
+ const s={};for(const k in RX)if(RX[k].test(text))s[k]="yes"; // keyword backstop always runs
+ if(API_URL){try{const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,lang})});
+  const a=clean(await r.json());KEYS.forEach(k=>{if(a[k]=="yes")s[k]="yes"})}catch(e){}}
+ return s}
+// ===== VIEWS =====
+function setLang(v){lang=v;document.documentElement.lang=v;$("c1").textContent=t("call");view()}
+function home(){view=home;clearInterval(timer);
+ app.innerHTML=`<div class="card"><h2>${t("tap")}</h2><div class="grid">${QT.map(k=>`<button class="pri" onclick="tapSym('${k}')">${lab(k)}</button>`).join("")}</div></div>
+ <div class="card"><h2>${t("desc")}</h2><textarea id="tx" rows="4"></textarea><div class="row"><button onclick="mic()" aria-label="Voice">🎤</button><button class="pri" onclick="analyze()">${t("go")}</button></div></div>
+ <details class="card"><summary>Patient profile (saved on this device only)</summary>
+ <input id="pn" placeholder="Name"><input id="pa" placeholder="Age"><input id="pc" placeholder="Known conditions"><input id="pm" placeholder="Medicines"><input id="pt" placeholder="Family contact number"></details>`;
+ try{const p=JSON.parse(localStorage.gh||"{}");["pn","pa","pc","pm","pt"].forEach(i=>{$(i).value=p[i]||""})}catch(e){}
+ ["pn","pa","pc","pm","pt"].forEach(i=>$(i).oninput=()=>{try{localStorage.gh=JSON.stringify(Object.fromEntries(["pn","pa","pc","pm","pt"].map(j=>[j,$(j).value])))}catch(e){}})}
+function tapSym(k){sym={[k]:"yes"};finish()}
+async function analyze(){const x=$("tx").value.trim();if(!x)return;sym=await extract(x);finish()}
+function finish(){const d=decide(sym);if(d.level=="EMERGENCY")return result(d);
+ sym=clean(sym);Q=ASK.filter(k=>sym[k]=="unknown");qi=0;ask()}
+function ask(){view=ask;if(qi>=Q.length)return docView();const k=Q[qi];
+ app.innerHTML=`<div class="card"><p class="m">${qi+1} / ${Q.length}</p><h2>${t("ask")}<br>${lab(k)}</h2>
+ <div class="row"><button class="pri" onclick="ans('${k}','yes')">${t("y")}</button><button onclick="ans('${k}','no')">${t("n")}</button><button onclick="ans('${k}','unknown')">${t("u")}</button></div></div>`}
+function ans(k,v){sym[k]=v;if(v=="yes")return result(decide(sym));qi++;ask()}
+function docView(){view=docView;app.innerHTML=`<div class="card"><h2>${t("doc")}</h2></div><div class="card"><div id="hs"></div></div>
+ <div class="row np"><button onclick="home()">←</button></div>`;hosp("general")}
+function stype(hits){return hits.some(k=>STROKE.includes(k))?"stroke":hits.includes("chest_pain")?"cardiac":"general"}
+function result(d){view=()=>result(d);const ty=stype(d.hits);onset=onset||new Date();
+ const p=prof();const warn=/diabet|sugar|சர்க்கரை|मधुमेह/i.test(p.pc||"")?`<p class="m">Low blood sugar can look like a stroke. Check sugar only if it does not delay the 108 call.</p>`:"";
+ app.innerHTML=`<div class="card emg"><h2>${t("emg")}</h2><div class="row"><a class="btn red" href="tel:108" onclick="callTap=1">108</a><a class="btn red" href="tel:112">112</a></div>
+ <p>${d.hits.map(lab).join(", ")}</p></div>
+ <div class="card"><h2>Ambulance (details from the 108 operator)</h2><p class="m">Type what the operator tells you. This is not live tracking.</p>
+ <input id="an" placeholder="Driver name" value="${amb.n||""}"><input id="ap" type="tel" placeholder="Driver phone" value="${amb.p||""}"><input id="av" placeholder="Ambulance number" value="${amb.v||""}"><input id="ae" type="number" min="0" placeholder="Arrives in (minutes, operator estimate)" value="${amb.e||""}"><p id="bk" class="m"></p><textarea id="ax" rows="2" placeholder="Paste the operator’s message, or speak the details"></textarea><div class="row"><button onclick="mic('ax')" aria-label="Voice">🎤</button><button onclick="parseAmb()">Fill details</button></div><div id="ad"></div></div>
+ <div class="card"><label>Symptoms started at <input id="on" type="time" value="${hm(onset)}"></label><div id="tm"></div></div>
+ <div class="card"><h2>While you wait</h2><ol>${t("steps").map(s=>`<li>${s}</li>`).join("")}</ol>${warn}<button onclick="speak()">🔊</button></div>
+ <div class="card"><div id="hs"></div></div>
+ <div class="card"><h2>Hospital handoff</h2><pre id="ho"></pre>
+ <label><input type="checkbox" id="cs" style="width:auto"> I agree to share this health information with the person I choose.</label>
+ <div class="row np"><button onclick="share()">WhatsApp</button><button onclick="window.print()">Print</button></div></div>
+ <div class="row np"><button onclick="sym={};onset=null;amb={};home()">←</button></div>`;
+ $("on").onchange=e=>{const[h,m]=e.target.value.split(":");const n=new Date();n.setHours(h,m,0,0);if(n>new Date())n.setDate(n.getDate()-1);onset=n;tick()};
+ clearInterval(timer);timer=setInterval(tick,30000);tick();hosp(ty);ambBind();
+ window.hits=d.hits}
+const hm=d=>String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+function prof(){try{return JSON.parse(localStorage.gh||"{}")}catch(e){return{}}}
+function tick(){const m=Math.max(0,Math.floor((new Date()-onset)/60000));if($("tm"))$("tm").textContent=m+" min";
+ const p=prof(),h=window.hits||[];if($("ho"))$("ho").textContent=
+ `GOLDENHOUR AI: FAMILY-REPORTED HANDOFF (not a medical assessment)\nPatient: ${p.pn||"-"}, age ${p.pa||"-"}\nSigns reported by family: ${h.map(k=>T.en.L[k]).join(", ")}\nSymptoms started about: ${hm(onset)} (${m} min ago)\nKnown conditions: ${p.pc||"-"}\nMedicines: ${p.pm||"-"}\nFamily contact: ${p.pt||"-"}\nAmbulance: ${amb.v||"-"}, driver ${amb.n||"-"} ${amb.p||""}, ${eta()}`;ambShow()}
+const ph=v=>String(v||"").replace(/[^\d+]/g,"");
+function eta(){if(!amb.t)return"ETA -";return"ETA about "+Math.max(0,Math.round((amb.t-Date.now())/60000))+" min (operator estimate)"}
+function mob(v){let d=String(v||"").replace(/\D/g,"");if(d.length==12&&d.startsWith("91"))d=d.slice(2);if(d.length==11&&d[0]=="0")d=d.slice(1);return /^[6-9]\d{9}$/.test(d)?d:""}
+function ambShow(){const d=$("ad");if(!d)return;const m=mob(amb.p);
+ d.innerHTML=(m?`<a class="btn red" href="tel:+91${m}">Call now: ${m.slice(0,5)} ${m.slice(5)}</a> `:(ph(amb.p)?`<button disabled>Call now (enter all 10 digits)</button> `:""))+(amb.t?`<p><b>${eta()}</b></p>`:"")+(amb.v||amb.n?`<p class="m">${amb.v||""} ${amb.n||""}</p>`:"")}
+function ambBind(){[["an","n"],["ap","p"],["av","v"]].forEach(([i,k])=>$(i).oninput=e=>{amb[k]=e.target.value;ambShow();tick()});
+ $("ae").oninput=e=>{amb.e=e.target.value;amb.t=e.target.value===""?null:Date.now()+Number(e.target.value)*60000;ambShow();tick()};ambShow()}
+function parseAmb(){const x=$("ax").value;
+ const ph1=x.match(/\+?\d[\d\s-]{8,}\d/),v=x.match(/\b[A-Z]{2}[\s-]?\d{1,2}[\s-]?[A-Z]{1,3}[\s-]?\d{3,4}\b/i),e=x.match(/(\d{1,3})\s*(?:min|mins|minutes|நிமிட|मिनट)/i),n=x.match(/driver(?:\s*name)?\s*[:\-]?\s*([A-Za-z]+(?:\s[A-Za-z]+)?)/i);
+ if(ph1)amb.p=ph(ph1[0]);if(v)amb.v=v[0].toUpperCase();if(e){amb.e=e[1];amb.t=Date.now()+Number(e[1])*60000}
+ if(n)amb.n=n[1].replace(/\b(phone|ph|mobile|mob|number|no|arriving|will|is)\b.*$/i,"").trim();
+ $("an").value=amb.n||"";$("ap").value=amb.p||"";$("av").value=amb.v||"";$("ae").value=amb.e||"";ambShow();tick()}
+$("c1").onclick=()=>{callTap=1};
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&callTap&&$("bk")){callTap=0;$("bk").textContent="Back from the call? Enter or paste what the operator told you.";$("bk").scrollIntoView({behavior:"smooth",block:"center"})}});
+function share(){if(!$("cs").checked){alert("Please tick the consent box first.");return}
+ window.open("https://wa.me/?text="+encodeURIComponent($("ho").textContent))}
+function speak(){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t("steps").join(". "));u.lang=VOICE[lang];speechSynthesis.speak(u)}
+function mic(id="tx"){const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){alert("Voice input is not supported in this browser. Please type.");return}
+ const r=new R();r.lang=VOICE[lang];r.onresult=e=>{$(id).value=e.results[0][0].transcript};r.start()}
+// ===== HOSPITALS =====
+function km(a,b,c,d){const r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return 12742*Math.asin(Math.sqrt(x))}
+function hosp(ty){const draw=()=>{let l=HOSP.filter(h=>h.t.includes(ty)).map(h=>({...h,d:pos?km(pos.lat,pos.lng,h.lat,h.lng):null}));
+ l.sort((a,b)=>(a.d??0)-(b.d??0));
+ $("hs").innerHTML=`<h2>${ty=="stroke"?"Stroke-capable":ty=="cardiac"?"Heart-capable":"Nearby"} hospitals</h2><p class="m">Call 108 first. Call ahead to confirm the hospital can take the patient. Live bed data is not available.</p>`+
+ l.map(h=>`<div class="h"><div><b>${h.n}</b><br><span class="m">${h.d==null?"distance unavailable":h.d.toFixed(1)+" km (straight line)"}</span></div>${h.p?`<a class="btn pri" href="tel:${h.p}">Call</a>`:`<button disabled>No number</button>`}</div>`).join("")};
+ draw();if(!pos&&navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{pos={lat:p.coords.latitude,lng:p.coords.longitude};draw()},()=>{})}
+$("lg").onchange=e=>setLang(e.target.value);
+const app=$("app");setLang("en");home();
+</script></body></html>
