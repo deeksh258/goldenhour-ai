@@ -43,22 +43,22 @@ const HOSP=[
 // ===== TEXT (have a native speaker review Tamil and Hindi) =====
 const T={
 en:{call:"Call 108",tap:"What is happening? Tap one:",desc:"Or describe it in your own words",go:"Check",
- emg:"Call 108 or 112 now",y:"Yes",n:"No",u:"Not sure",ask:"Is this happening?",
+ emg:"Call 108 or 112 now",y:"Yes",n:"No",u:"Not sure",ask:"Is this happening?",nomatch:"I couldn’t recognise a symptom in your text, so I will ask a few questions. You can also go back and tap the closest symptom.",
  doc:"I can’t rule out an emergency. Please see a doctor soon, and call 108 right away if things get worse.",
  steps:["Note the time the symptoms started","Give no food, water or medicines","Keep them seated or lying safely","Unlock the door and keep the medicine list ready"],
  L:{face_drooping:"Face drooping",arm_or_leg_weakness:"Arm or leg weakness",speech_trouble:"Speech trouble",sudden_vision_loss:"Sudden vision loss",sudden_severe_headache:"Sudden severe headache",sudden_confusion_or_dizziness:"Sudden confusion or dizziness",chest_pain:"Chest pain",breathing_trouble:"Breathing trouble",seizure:"Seizure",unconsciousness:"Unconscious"}},
 ta:{call:"108-க்கு அழைக்கவும்",tap:"என்ன நடக்கிறது? ஒன்றைத் தொடவும்:",desc:"அல்லது உங்கள் மொழியில் விவரிக்கவும்",go:"சரிபார்",
- emg:"இப்போதே 108 அல்லது 112-க்கு அழைக்கவும்",y:"ஆம்",n:"இல்லை",u:"தெரியவில்லை",ask:"இது நடக்கிறதா?",
+ emg:"இப்போதே 108 அல்லது 112-க்கு அழைக்கவும்",y:"ஆம்",n:"இல்லை",u:"தெரியவில்லை",ask:"இது நடக்கிறதா?",nomatch:"உங்கள் எழுத்தில் அறிகுறியை என்னால் அடையாளம் காண முடியவில்லை. சில கேள்விகள் கேட்கிறேன்.",
  doc:"அவசர நிலை இல்லை என்று என்னால் உறுதி செய்ய முடியாது. தயவுசெய்து மருத்துவரைப் பார்க்கவும். நிலை மோசமானால் உடனே 108-க்கு அழைக்கவும்.",
  steps:["அறிகுறி தொடங்கிய நேரத்தைக் குறித்துக் கொள்ளுங்கள்","உணவு, தண்ணீர், மருந்து எதுவும் கொடுக்காதீர்கள்","அவரை பாதுகாப்பாக அமர வைக்கவும் அல்லது படுக்க வைக்கவும்","கதவைத் திறந்து வைத்து, மருந்துப் பட்டியலை தயாராக வைக்கவும்"],
  L:{face_drooping:"முகம் கோணலாக உள்ளது",arm_or_leg_weakness:"கை/கால் பலவீனம்",speech_trouble:"பேச்சு குழறுகிறது",chest_pain:"நெஞ்சு வலி",breathing_trouble:"மூச்சுத் திணறல்",unconsciousness:"மயக்கம்"}},
 hi:{call:"108 पर कॉल करें",tap:"क्या हो रहा है? एक चुनें:",desc:"या अपनी भाषा में बताएं",go:"जांचें",
- emg:"अभी 108 या 112 पर कॉल करें",y:"हाँ",n:"नहीं",u:"पता नहीं",ask:"क्या यह हो रहा है?",
+ emg:"अभी 108 या 112 पर कॉल करें",y:"हाँ",n:"नहीं",u:"पता नहीं",ask:"क्या यह हो रहा है?",nomatch:"मैं आपके लिखे में लक्षण पहचान नहीं पाया, इसलिए कुछ सवाल पूछ रहा हूँ।",
  doc:"मैं आपात स्थिति से इनकार नहीं कर सकता। कृपया डॉक्टर से मिलें। हालत बिगड़े तो तुरंत 108 पर कॉल करें।",
  steps:["लक्षण शुरू होने का समय नोट करें","खाना, पानी या दवा न दें","उन्हें सुरक्षित बैठाएं या लिटाएं","दरवाजा खुला रखें और दवाओं की सूची तैयार रखें"],
  L:{face_drooping:"चेहरा टेढ़ा",arm_or_leg_weakness:"हाथ/पैर कमजोर",speech_trouble:"बोलने में दिक्कत",chest_pain:"सीने में दर्द",breathing_trouble:"सांस लेने में तकलीफ",unconsciousness:"बेहोश"}}};
 const VOICE={en:"en-IN",ta:"ta-IN",hi:"hi-IN"};
-let lang="en",callTap=0,amb={},Q=[],sym={},view=()=>{},pos=null,onset=null,qi=0,timer=null;
+let lang="en",nm=0,callTap=0,amb={},Q=[],sym={},view=()=>{},pos=null,onset=null,qi=0,timer=null;
 const $=id=>document.getElementById(id);
 const t=k=>T[lang][k]??T.en[k];
 const lab=k=>(T[lang].L||{})[k]||T.en.L[k];
@@ -66,22 +66,22 @@ const lab=k=>(T[lang].L||{})[k]||T.en.L[k];
 const KEYS=Object.keys(T.en.L);
 const STROKE=KEYS.slice(0,6),QT=["face_drooping","arm_or_leg_weakness","speech_trouble","chest_pain","breathing_trouble","unconsciousness"],ASK=QT.slice(0,5);
 const RX={
-face_drooping:/face|droop|mouth|முகம்|வாய்|சாய்|கோணல்|चेहरा|मुंह|टेढ़/i,
-arm_or_leg_weakness:/\b(arm|leg|hand)\b|weak|numb|கை|கால்|பலவீன|உணர்வ|हाथ|पैर|कमजोर|सुन्न/i,
-speech_trouble:/speech|slur|speak|talk|பேச்சு|உளறு|குழறு|பேச|बोल|जुबान|लड़खड़/i,
-sudden_vision_loss:/vision|can.t see|blind|பார்வை|दिखाई|नजर/i,
-sudden_severe_headache:/headache|தலைவலி|सिरदर्द/i,
-sudden_confusion_or_dizziness:/confus|dizz|giddy|குழப்ப|தலைசுற்ற|चक्कर|भ्रम/i,
-chest_pain:/chest|heart|நெஞ்சு|மார்பு|सीने|छाती/i,
-breathing_trouble:/breath|மூச்சு|सांस|साँस/i,
-seizure:/seizure|\bfits?\b|convuls|வலிப்பு|दौरा|मिर्गी/i,
-unconsciousness:/unconscious|faint|collapse|not respond|மயக்க|बेहोश/i};
+face_drooping:/face|droop|mouth|lip|முகம்|முக|வாய்|வாய|கோண|சாய்ந|இழுத்|இழுக்|வளைந்|mugam|muham|vaai|vai kon|koni|चेहरा|चेहरे|मुंह|मुँह|टेढ|लटक|chehra|munh|\bmuh\b|tedh|latak/i,
+arm_or_leg_weakness:/\b(arm|leg|hand)\b|weak|numb|paraly|கை|கால்|காலில்|பலவீன|பலமில்ல|உணர்வ|மரத்து|தளர்|அசைக்க|\bkai\b|\bkaal\b|balaveen|marathu|thalar|हाथ|पैर|पांव|कमज|सुन्न|haath|\bpair\b|kamzor|\bsunn/i,
+speech_trouble:/speech|slur|can.t speak|cannot speak|trouble speaking|talk|பேச்சு|பேச முடி|பேச வர|பேசவே|பேசல|உளற|குழற|திக்|வார்த்தை|pechu|pesa mudiy|pesa varala|ulara|kulara|thikk|बोल नहीं|बोल ना|बोलने में|बोल पा|बोल सक|बोलते नहीं|ुबान|लड.?खड|अटक|bol nahi|bolne|zubaan|jubaan/i,
+sudden_vision_loss:/vision|can.t see|cannot see|blind|பார்வை|கண் தெரி|கண்ணு தெரி|दिखाई|अंधा|paarvai|dikhai/i,
+sudden_severe_headache:/headache|head ache|தலைவலி|தலை வலி|सिरदर्द|सिर दर्द|सिर में दर्द|thalai vali|thalaivali|sir dard/i,
+sudden_confusion_or_dizziness:/confus|dizz|giddy|தலைசுற்ற|தலை சுற்ற|சுற்றுத|குழப்ப|उलझन|चक्कर|भ्रम|बहक|kulapp|thalai sutr|chakkar/i,
+chest_pain:/chest|heart|நெஞ்|மார்ப|இதய|nenju|nenchu|nenjil|maarbu|idhayam|idayam|सीने|सीना|छाती|दिल में|दिल का|हार्ट|seene|seena|chhati|chaati|dil mein/i,
+breathing_trouble:/breath|மூச்|சுவாச|திணற|moochu|moochi|swasam|thinaral|सांस|साँस|दम घुट|दम फूल|saans|dam ghut/i,
+seizure:/seizure|\bfits?\b|convuls|வலிப்ப|இழுப்பு|valippu|valipu|दौरा|मिर्गी|झटके|daura|mirgi|jhatke/i,
+unconsciousness:/unconscious|faint|collapse|not respond|unresponsive|passed out|black(?:ed)? out|மயங்|மயக்|சுயநினைவ|நினைவு இல்|நினைவில்ல|நினைவிழ|கீழே விழ|mayang|mayakk|moorcha|ninaivu illa|बेहोश|होश नहीं|होश में नहीं|अचेत|गिर पड|गिर गय|गिर गए|behosh|hosh nahi/i};
 function clean(s){const r={};KEYS.forEach(k=>{const v=String(s[k]??"unknown").trim().toLowerCase();r[k]=v=="yes"||v=="no"?v:"unknown"});return r}
 function decide(s){s=clean(s);const hits=KEYS.filter(k=>s[k]=="yes");
  if(hits.length)return{level:"EMERGENCY",hits};
  return{level:KEYS.some(k=>s[k]=="unknown")?"NOT_CLEAR":"NO_SIGNS_REPORTED",hits:[]}} // no "safe" level on purpose
 async function extract(text){
- const s={};for(const k in RX)if(RX[k].test(text))s[k]="yes"; // keyword backstop always runs
+ text=text.normalize("NFC").replace(/[\u200b-\u200d\ufeff]/g,"");const s={};for(const k in RX)if(RX[k].test(text))s[k]="yes"; // keyword backstop always runs
  if(API_URL){try{const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,lang})});
   const a=clean(await r.json());KEYS.forEach(k=>{if(a[k]=="yes")s[k]="yes"})}catch(e){}}
  return s}
@@ -89,17 +89,17 @@ async function extract(text){
 function setLang(v){lang=v;document.documentElement.lang=v;$("c1").textContent=t("call");view()}
 function home(){view=home;clearInterval(timer);
  app.innerHTML=`<div class="card"><h2>${t("tap")}</h2><div class="grid">${QT.map(k=>`<button class="pri" onclick="tapSym('${k}')">${lab(k)}</button>`).join("")}</div></div>
- <div class="card"><h2>${t("desc")}</h2><textarea id="tx" rows="4"></textarea><div class="row"><button onclick="mic()" aria-label="Voice">🎤</button><button class="pri" onclick="analyze()">${t("go")}</button></div></div>
+ <div class="card"><h2>${t("desc")}</h2><textarea id="tx" rows="4"></textarea><div class="row"><button onclick="mic()" aria-label="Voice">🎤</button><button class="pri" onclick="analyze()">${t("go")}</button></div><p id="vs" class="m"></p></div>
  <details class="card"><summary>Patient profile (saved on this device only)</summary>
  <input id="pn" placeholder="Name"><input id="pa" placeholder="Age"><input id="pc" placeholder="Known conditions"><input id="pm" placeholder="Medicines"><input id="pt" placeholder="Family contact number"></details>`;
  try{const p=JSON.parse(localStorage.gh||"{}");["pn","pa","pc","pm","pt"].forEach(i=>{$(i).value=p[i]||""})}catch(e){}
  ["pn","pa","pc","pm","pt"].forEach(i=>$(i).oninput=()=>{try{localStorage.gh=JSON.stringify(Object.fromEntries(["pn","pa","pc","pm","pt"].map(j=>[j,$(j).value])))}catch(e){}})}
-function tapSym(k){sym={[k]:"yes"};finish()}
-async function analyze(){const x=$("tx").value.trim();if(!x)return;sym=await extract(x);finish()}
+function tapSym(k){sym={[k]:"yes"};nm=0;finish()}
+async function analyze(){const x=$("tx").value.trim();if(!x)return;sym=await extract(x);nm=Object.keys(sym).length==0;finish()}
 function finish(){const d=decide(sym);if(d.level=="EMERGENCY")return result(d);
  sym=clean(sym);Q=ASK.filter(k=>sym[k]=="unknown");qi=0;ask()}
 function ask(){view=ask;if(qi>=Q.length)return docView();const k=Q[qi];
- app.innerHTML=`<div class="card"><p class="m">${qi+1} / ${Q.length}</p><h2>${t("ask")}<br>${lab(k)}</h2>
+ app.innerHTML=`${nm&&qi==0?`<div class="card"><p>${t("nomatch")}</p></div>`:""}<div class="card"><p class="m">${qi+1} / ${Q.length}</p><h2>${t("ask")}<br>${lab(k)}</h2>
  <div class="row"><button class="pri" onclick="ans('${k}','yes')">${t("y")}</button><button onclick="ans('${k}','no')">${t("n")}</button><button onclick="ans('${k}','unknown')">${t("u")}</button></div></div>`}
 function ans(k,v){sym[k]=v;if(v=="yes")return result(decide(sym));qi++;ask()}
 function docView(){view=docView;app.innerHTML=`<div class="card"><h2>${t("doc")}</h2></div><div class="card"><div id="hs"></div></div>
@@ -112,7 +112,7 @@ function result(d){view=()=>result(d);const ty=stype(d.hits);onset=onset||new Da
  <div class="card"><h2>Ambulance (details from the 108 operator)</h2><p class="m">Type what the operator tells you. This is not live tracking.</p>
  <input id="an" placeholder="Driver name" value="${amb.n||""}"><input id="ap" type="tel" placeholder="Driver phone" value="${amb.p||""}"><input id="av" placeholder="Ambulance number" value="${amb.v||""}"><input id="ae" type="number" min="0" placeholder="Arrives in (minutes, operator estimate)" value="${amb.e||""}"><p id="bk" class="m"></p><textarea id="ax" rows="2" placeholder="Paste the operator’s message, or speak the details"></textarea><div class="row"><button onclick="mic('ax')" aria-label="Voice">🎤</button><button onclick="parseAmb()">Fill details</button></div><div id="ad"></div></div>
  <div class="card"><label>Symptoms started at <input id="on" type="time" value="${hm(onset)}"></label><div id="tm"></div></div>
- <div class="card"><h2>While you wait</h2><ol>${t("steps").map(s=>`<li>${s}</li>`).join("")}</ol>${warn}<button onclick="speak()">🔊</button></div>
+ <div class="card"><h2>While you wait</h2><ol>${t("steps").map(s=>`<li>${s}</li>`).join("")}</ol>${warn}<button onclick="speak()">🔊</button><p id="sv" class="m"></p></div>
  <div class="card"><div id="hs"></div></div>
  <div class="card"><h2>Hospital handoff</h2><pre id="ho"></pre>
  <label><input type="checkbox" id="cs" style="width:auto"> I agree to share this health information with the person I choose.</label>
@@ -142,16 +142,30 @@ $("c1").onclick=()=>{callTap=1};
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&callTap&&$("bk")){callTap=0;$("bk").textContent="Back from the call? Enter or paste what the operator told you.";$("bk").scrollIntoView({behavior:"smooth",block:"center"})}});
 function share(){if(!$("cs").checked){alert("Please tick the consent box first.");return}
  window.open("https://wa.me/?text="+encodeURIComponent($("ho").textContent))}
-function speak(){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t("steps").join(". "));u.lang=VOICE[lang];speechSynthesis.speak(u)}
-function mic(id="tx"){const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){alert("Voice input is not supported in this browser. Please type.");return}
- const r=new R();r.lang=VOICE[lang];r.onresult=e=>{$(id).value=e.results[0][0].transcript};r.start()}
+function speak(){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t("steps").join(". "));u.lang=VOICE[lang];speechSynthesis.speak(u);const vs=speechSynthesis.getVoices(),has=!vs.length||vs.some(v=>v.lang.replace("_","-").toLowerCase().startsWith(lang)),m=$("sv");if(m)m.textContent=has?"":"This phone may have no voice installed for this language, so you may hear nothing or English. Install it in the phone’s text-to-speech settings."}
+function mic(id="tx"){const R=window.SpeechRecognition||window.webkitSpeechRecognition,s=$("vs")||$("bk");
+ if(!R){s.textContent="Voice typing is not supported in this browser. Use the microphone on your phone keyboard instead.";return}
+ const r=new R();r.lang=VOICE[lang];r.interimResults=true;r.continuous=false;s.textContent="Listening… speak now";
+ r.onresult=e=>{$(id).value=Array.from(e.results).map(x=>x[0].transcript).join(" ")};
+ r.onerror=e=>{s.textContent=({"not-allowed":"The microphone is blocked. Allow it in the browser settings.","service-not-allowed":"The microphone is blocked. Allow it in the browser settings.","no-speech":"I heard nothing. Try again, closer to the phone.","language-not-supported":"Voice typing does not support this language here. Use the microphone on your phone keyboard.","network":"Voice typing needs an internet connection."})[e.error]||("Voice error: "+e.error)};
+ r.onend=()=>{if(s.textContent.startsWith("Listening"))s.textContent=""};
+ try{r.start()}catch(e){s.textContent="Could not start the microphone."}}
 // ===== HOSPITALS =====
 function km(a,b,c,d){const r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return 12742*Math.asin(Math.sqrt(x))}
-function hosp(ty){const draw=()=>{let l=HOSP.filter(h=>h.t.includes(ty)).map(h=>({...h,d:pos?km(pos.lat,pos.lng,h.lat,h.lng):null}));
- l.sort((a,b)=>(a.d??0)-(b.d??0));
- $("hs").innerHTML=`<h2>${ty=="stroke"?"Stroke-capable":ty=="cardiac"?"Heart-capable":"Nearby"} hospitals</h2><p class="m">Call 108 first. Call ahead to confirm the hospital can take the patient. Live bed data is not available.</p>`+
- l.map(h=>`<div class="h"><div><b>${h.n}</b><br><span class="m">${h.d==null?"distance unavailable":h.d.toFixed(1)+" km (straight line)"}</span></div>${h.p?`<a class="btn pri" href="tel:${h.p}">Call</a>`:`<button disabled>No number</button>`}</div>`).join("")};
- draw();if(!pos&&navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{pos={lat:p.coords.latitude,lng:p.coords.longitude};draw()},()=>{})}
+function hosp(ty){const el=$("hs");let live=null,note='<p class="m">Looking for hospitals near you…</p>';
+ const draw=()=>{let l=(live||HOSP.filter(h=>h.t.includes(ty))).map(h=>({...h,d:pos?km(pos.lat,pos.lng,h.lat,h.lng):null}));
+  l.sort((a,b)=>(a.d??1e9)-(b.d??1e9));l=l.slice(0,6);
+  el.innerHTML=`<h2>${live?"Nearest hospitals":(ty=="stroke"?"Stroke":ty=="cardiac"?"Heart":"Nearby")+" hospitals (sample)"}</h2><p class="m">Call 108 first. ${live?"List from OpenStreetMap: names, numbers and distances may be missing or out of date, and it cannot show which hospitals treat stroke or heart attacks. Call ahead to confirm.":"Sample data only. Call ahead to confirm."} Live bed data is not available.</p>${note}`+
+  l.map(h=>`<div class="h"><div><b>${h.n}</b><br><span class="m">${h.d==null?"distance unavailable":h.d.toFixed(1)+" km (straight line)"}${h.p?" · "+h.p:""}</span></div>${ph(h.p)?`<a class="btn pri" href="tel:${ph(h.p)}">Call</a>`:`<button disabled>No number</button>`}</div>`).join("")};
+ const load=()=>{const c=new AbortController();setTimeout(()=>c.abort(),15000);
+  const q=`[out:json][timeout:20];nwr(around:6000,${pos.lat},${pos.lng})[amenity=hospital];out center 100;`;
+  fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:"data="+encodeURIComponent(q),signal:c.signal}).then(r=>r.json()).then(j=>{
+   const a=(j.elements||[]).map(e=>{const t=e.tags||{};return{n:t.name||t["name:en"]||"Hospital (no name listed)",lat:e.lat??(e.center&&e.center.lat),lng:e.lon??(e.center&&e.center.lon),p:(t.phone||t["contact:phone"]||"").split(";")[0].trim()}}).filter(h=>h.lat!=null);
+   const nm2=a.filter(h=>!/no name listed/.test(h.n));if(nm2.length)a.splice(0,a.length,...nm2);
+   if(a.length){live=a;note=""}else note='<p class="m">No hospitals found within 6 km on the map data. Showing sample data.</p>';draw()}).catch(()=>{note='<p class="m">Could not load nearby hospitals (no internet or the map service is busy). Showing sample data.</p>';draw()})};
+ draw();
+ if(pos)load();else if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{pos={lat:p.coords.latitude,lng:p.coords.longitude};draw();load()},()=>{note='<p class="m">Location is blocked, so I cannot find hospitals near you. Allow location in the browser settings and reload. Showing sample data.</p>';draw()});
+ else{note='<p class="m">This browser has no location support. Showing sample data.</p>';draw()}}
 $("lg").onchange=e=>setLang(e.target.value);
 const app=$("app");setLang("en");home();
 </script></body></html>
