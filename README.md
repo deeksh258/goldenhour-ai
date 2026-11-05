@@ -20,7 +20,7 @@ Families often miss or doubt stroke and heart attack signs, delay calling, and c
 | Web page, safety rules, quick-tap, handoff | Built |
 | Ambulance details card and tap-to-call | Built |
 | LLM symptom extraction backend | [Built and tested / Not working: edit] |
-| Hospital list | **Sample data only**, replace with verified hospitals |
+| Hospital list | Live from OpenStreetMap (names or numbers may be missing; stroke/heart capability not verified) plus Google Maps links |
 | Risk model (Kaggle stroke dataset) | Not built |
 | Live ambulance tracking, live hospital data | Not built (future scope) |
 
