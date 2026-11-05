@@ -1,48 +1,70 @@
 # GoldenHour AI
 
-Emergency guidance for families during a suspected stroke or heart attack. Built for **Build The AI For YOU 2026** by team **SD CODES** (Sai Deeksha S, solo).
+**Emergency guidance for families during a suspected stroke or heart attack, in English, Tamil and Hindi.**
 
-> Prototype for a student hackathon. **Not a medical device.** It does not diagnose and cannot rule out an emergency. In an emergency, call 108 or 112.
+Team: SD CODES (solo, Team Lead: Sai Deeksha S) | Build The AI For YOU 2026
+
+- Live app: https://deeksh258.github.io/goldenhour-ai/
+- Backend (Render): https://goldenhour-ai.onrender.com/docs
 
 ## The problem
-Families often miss or doubt stroke and heart attack signs, delay calling, and cannot give clear details to responders. GoldenHour AI helps the family act fast: call 108, get guidance in their own language, and hand over clear information.
+In a stroke or heart attack, minutes matter. The family member beside the patient is often unsure what they are seeing, panics, delays the call to 108, and cannot explain clearly to the ambulance or hospital.
 
-## What it does
-- One-tap emergency mode with a Call 108 button always visible
-- Describe the situation by text or voice in English, Tamil or Hindi
-- An LLM extracts symptoms from the description (backend `/extract`); plain-code safety rules decide the level (emergency / not clear / no signs reported). The rules never say "safe".
-- Spoken waiting steps, onset-time timer, ambulance details card (typed or pasted from the 108 operator, with tap-to-call and ETA countdown)
-- One-page hospital handoff, shareable only after consent
+## What GoldenHour AI does
+GoldenHour AI does not treat anyone. It shortens the time lost before treatment: faster recognition, a better 108 call, and a clearer handover.
 
-## Status (be honest, edit before submitting)
-| Feature | Status |
-|---|---|
-| Web page, safety rules, quick-tap, handoff | Built |
-| Ambulance details card and tap-to-call | Built |
-| LLM symptom extraction backend | [Built and tested / Not working: edit] |
-| Hospital list | Live from OpenStreetMap (names or numbers may be missing; stroke/heart capability not verified) plus Google Maps links |
-| Risk model (Kaggle stroke dataset) | Not built |
-| Live ambulance tracking, live hospital data | Not built (future scope) |
+## What works today
+- Language selector: English, Tamil, Hindi
+- Always-visible **Call 108** button
+- Six quick-tap symptom buttons, or free-text and voice description
+- **AI symptom reading (Groq) on a Render-hosted backend**, for free-text descriptions
+- Safety rules in plain code decide the result: EMERGENCY, NOT_CLEAR (asks yes/no/not sure follow-ups) or NO_SIGNS_REPORTED. There is deliberately no "safe" level.
+- Keyword matching always runs as a backstop. The AI can only add "yes" signs, never remove them.
+- Emergency screen: onset time and timer, spoken waiting steps
+- Ambulance details card (driver, phone, vehicle number, ETA) for details given by the 108 operator
+- Nearby hospitals from OpenStreetMap, plus an "Open hospitals in Google Maps" button
+- One-page handoff of observations only (never a diagnosis), shared by WhatsApp only after consent, or printed
 
-## Development note
-A first version of the web page was prepared during the Round 1 phase. During the Round 2 sprint (1 to 5 November 2026) I added: [list what you actually did, for example: backend, LLM integration, deployment, testing, fixes].
+## How it is built
+- Frontend: single-file HTML/CSS/JavaScript, hosted on GitHub Pages
+- Backend: Python FastAPI (`/extract`, `/health`) hosted on **Render** (Free instance)
+- AI: Groq API, model `openai/gpt-oss-20b`. The API key is stored only in Render environment settings, never in this repo.
+- Rate limit: 10 requests per minute per IP
+- Hospitals: OpenStreetMap Overpass API (free, no key)
 
-## AI assistance and third-party tools (acknowledgement)
-- **AI assistant:** Claude (Anthropic) helped draft code and text. I reviewed, tested and edited it.
-- **Runtime AI:** [Groq Cloud API, free tier, model: write the exact model name you use] for symptom extraction (edit to match what you really use).
-- **Hosting:** Render [and GitHub Pages].
-- **Browser features:** Web Speech API, Geolocation API.
-- **References:** Lancet Global Health 2021 India neurological burden study; stroke in India systematic review (https://clok.uclan.ac.uk/38139). The Kaggle stroke dataset is [not used in this version].
+## Safety design
+The LLM only extracts symptoms. It never decides the outcome. Plain-code rules do. The handoff lists observations only.
+
+## Built during the sprint (1-5 Nov 2026)
+- Hospital lookup from OpenStreetMap and Google Maps button (removed all sample hospitals)
+- Greatly expanded Tamil, Hindi and English-letter keyword lists, with Unicode normalisation
+- Improved voice input with clear status and error messages
+- Ambulance details card
+- Backend deployed on Render and connected to Groq
+
+## Known limits and next steps
+- Free Render instance sleeps when idle, so the first AI request can take 30-50 seconds. Keyword matching still works meanwhile.
+- Keyword rules cannot handle negation or unusual wording. Some Tamil spellings, such as "maaradaippu", are not recognised yet.
+- Tamil and Hindi text has not been reviewed by native speakers. Symptom rules and waiting steps have not been reviewed by a doctor. This is not a medical device.
+- Hospital data is OpenStreetMap volunteer data. It does not show which hospitals treat stroke or heart attacks.
+- There is no real ambulance tracking. Details are entered from the 108 operator.
+- Voice input depends on the browser (best in Chrome).
+- Planned: more spellings and phrasings, doctor and native-speaker review, verified stroke-ready hospital data.
+- The Kaggle stroke dataset is not used and no risk-prediction model is built.
+
+## Research
+- About 6,99,000 stroke deaths in India in 2019 (7.4% of all deaths): India State-Level Disease Burden Initiative Neurological Disorders Collaborators, Lancet Global Health 2021. https://doi.org/10.1016/S2214-109X(21)00164-9
+- Existing tools are mostly state-run, professional-facing or hospital-side. We focus on the family, in regional languages.
+
+## Acknowledgements and AI assistance
+AI assistance: **Claude (Anthropic)**. I tested and edited it myself. Third-party tools: GitHub Pages, Render, Groq API, OpenStreetMap, Google Maps links, browser speech features.
 
 ## Run locally
 ```
 cd backend
 pip install -r requirements.txt
-set GROQ_API_KEY=your-key      (Mac/Linux: export GROQ_API_KEY=your-key)
-set LLM_MODEL=exact-model-name-from-the-Groq-console
+set GROQ_API_KEY=your_key
+set LLM_MODEL=openai/gpt-oss-20b
 uvicorn main:app --reload
 ```
-Open `index.html` with VS Code Live Server and set `API_URL` in it to `http://127.0.0.1:8000/extract`.
-
-## Limits
-Keyword fallback is used if the LLM is unavailable. Tamil and Hindi text needs review by native speakers. Hospital data and symptom rules have not been reviewed by clinicians.
+Open `index.html` in a browser. Set `API_URL` at the top to your backend address.
