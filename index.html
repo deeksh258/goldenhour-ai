@@ -35,11 +35,8 @@ footer{max-width:640px;margin:0 auto;padding:0 14px 30px;color:var(--mut);font-s
 <script>
 // ===== SETTINGS =====
 const API_URL = ""; // optional: your backend URL that calls an LLM and returns symptom JSON. Never put an API key here.
-// SAMPLE hospitals. Replace with verified hospitals and numbers from their official websites.
-const HOSP=[
- {n:"SAMPLE Hospital A (replace)",t:["stroke","general"],lat:13.08,lng:80.27,p:""},
- {n:"SAMPLE Hospital B (replace)",t:["cardiac","general"],lat:13.04,lng:80.23,p:""},
- {n:"SAMPLE Hospital C (replace)",t:["general"],lat:13.12,lng:80.29,p:""}];
+// Optional: add verified hospitals here, e.g. {n:"Name",t:["stroke","general"],lat:13.08,lng:80.27,p:"+914412345678"}. Leave empty to use live map data only.
+const HOSP=[];
 // ===== TEXT (have a native speaker review Tamil and Hindi) =====
 const T={
 en:{call:"Call 108",tap:"What is happening? Tap one:",desc:"Or describe it in your own words",go:"Check",
@@ -155,17 +152,17 @@ function km(a,b,c,d){const r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*
 function hosp(ty){const el=$("hs");let live=null,note='<p class="m">Looking for hospitals near you…</p>';
  const draw=()=>{let l=(live||HOSP.filter(h=>h.t.includes(ty))).map(h=>({...h,d:pos?km(pos.lat,pos.lng,h.lat,h.lng):null}));
   l.sort((a,b)=>(a.d??1e9)-(b.d??1e9));l=l.slice(0,6);
-  el.innerHTML=`<h2>${live?"Nearest hospitals":(ty=="stroke"?"Stroke":ty=="cardiac"?"Heart":"Nearby")+" hospitals (sample)"}</h2><p class="m">Call 108 first. ${live?"List from OpenStreetMap: names, numbers and distances may be missing or out of date, and it cannot show which hospitals treat stroke or heart attacks. Call ahead to confirm.":"Sample data only. Call ahead to confirm."} Live bed data is not available.</p>${note}`+
-  l.map(h=>`<div class="h"><div><b>${h.n}</b><br><span class="m">${h.d==null?"distance unavailable":h.d.toFixed(1)+" km (straight line)"}${h.p?" · "+h.p:""}</span></div>${ph(h.p)?`<a class="btn pri" href="tel:${ph(h.p)}">Call</a>`:`<button disabled>No number</button>`}</div>`).join("")};
+  el.innerHTML=`<h2>${live?"Nearest hospitals":"Nearby hospitals"}</h2><p class="m">Call 108 first. ${live?"List from OpenStreetMap: names, numbers and distances may be missing or out of date, and it cannot show which hospitals treat stroke or heart attacks. Call ahead to confirm.":"Call ahead to confirm."} Live bed data is not available.</p>${note}<a class="btn pri" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("hospital near "+(pos?pos.lat+","+pos.lng:"me"))}">Open hospitals in Google Maps</a>`+
+  l.map(h=>`<div class="h"><div><b>${h.n}</b><br><span class="m">${h.d==null?"distance unavailable":h.d.toFixed(1)+" km (straight line)"}${h.p?" · "+h.p:""}</span></div><div style="display:flex;gap:6px">${live?`<a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}">Map</a>`:""}${ph(h.p)?`<a class="btn pri" href="tel:${ph(h.p)}">Call</a>`:`<button disabled>No number</button>`}</div></div>`).join("")};
  const load=()=>{const c=new AbortController();setTimeout(()=>c.abort(),15000);
   const q=`[out:json][timeout:20];nwr(around:6000,${pos.lat},${pos.lng})[amenity=hospital];out center 100;`;
   fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:"data="+encodeURIComponent(q),signal:c.signal}).then(r=>r.json()).then(j=>{
    const a=(j.elements||[]).map(e=>{const t=e.tags||{};return{n:t.name||t["name:en"]||"Hospital (no name listed)",lat:e.lat??(e.center&&e.center.lat),lng:e.lon??(e.center&&e.center.lon),p:(t.phone||t["contact:phone"]||"").split(";")[0].trim()}}).filter(h=>h.lat!=null);
    const nm2=a.filter(h=>!/no name listed/.test(h.n));if(nm2.length)a.splice(0,a.length,...nm2);
-   if(a.length){live=a;note=""}else note='<p class="m">No hospitals found within 6 km on the map data. Showing sample data.</p>';draw()}).catch(()=>{note='<p class="m">Could not load nearby hospitals (no internet or the map service is busy). Showing sample data.</p>';draw()})};
+   if(a.length){live=a;note=""}else note='<p class="m">No hospitals found within 6 km on the map data. Use the Google Maps button below.</p>';draw()}).catch(()=>{note='<p class="m">Could not load nearby hospitals (no internet or the map service is busy). Use the Google Maps button below.</p>';draw()})};
  draw();
- if(pos)load();else if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{pos={lat:p.coords.latitude,lng:p.coords.longitude};draw();load()},()=>{note='<p class="m">Location is blocked, so I cannot find hospitals near you. Allow location in the browser settings and reload. Showing sample data.</p>';draw()});
- else{note='<p class="m">This browser has no location support. Showing sample data.</p>';draw()}}
+ if(pos)load();else if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{pos={lat:p.coords.latitude,lng:p.coords.longitude};draw();load()},()=>{note='<p class="m">Location is blocked, so I cannot find hospitals near you. Allow location in the browser settings and reload, or use the Google Maps button below.</p>';draw()});
+ else{note='<p class="m">This browser has no location support. Use the Google Maps button below.</p>';draw()}}
 $("lg").onchange=e=>setLang(e.target.value);
 const app=$("app");setLang("en");home();
 </script></body></html>
